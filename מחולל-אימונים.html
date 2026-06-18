@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>מחולל האימונים שלי</title>
+<style>
+  :root{
+    --bg:#0f1419; --bg2:#161d26; --card:#1c2530; --card2:#232e3b;
+    --line:#2c3947; --txt:#eaf0f6; --muted:#9fb0c0;
+    --accent:#ff6b3d; --accent2:#ffae42; --good:#36c98e; --blue:#4aa8ff;
+    --shadow:0 6px 24px rgba(0,0,0,.35);
+    --r:16px;
+  }
+  /* ערכת צבעים בהירה-פסטל */
+  body.light{
+    --bg:#f7f1fb; --bg2:#ffffff; --card:#ffffff; --card2:#f5eefb;
+    --line:#e8def0; --txt:#3d3548; --muted:#8d8299;
+    --accent:#ee8a6b; --accent2:#f0ad7d; --good:#5ec79b; --blue:#7badf0;
+    --shadow:0 8px 22px rgba(125,105,155,.16);
+    background:linear-gradient(160deg,#f8f1fb,#fdf4f6 45%,#eef4fc);
+  }
+  body.light header{background:rgba(255,255,255,.9)}
+  body.light nav{background:rgba(255,255,255,.95)}
+  body.light .block .prot{background:rgba(238,138,107,.10)}
+  body.light .fmt-card .ex{background:rgba(238,138,107,.10)}
+  body.light .pickerOv{background:rgba(70,55,95,.38)}
+  body.light .pickItem.on{background:rgba(94,199,155,.16);color:#1f7a57}
+  .themeBtn{
+    position:absolute;top:15px;left:14px;width:38px;height:38px;border-radius:50%;z-index:31;
+    border:1.5px solid var(--line);background:var(--card2);color:var(--txt);font-size:18px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;
+  }
+  .themeBtn:active{transform:scale(.9)}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,'Arial Hebrew',Arial,sans-serif;
+    background:linear-gradient(160deg,#0f1419,#10171f 40%,#131b24);
+    color:var(--txt);min-height:100vh;line-height:1.55;
+    padding-bottom:90px;
+  }
+  header{
+    padding:18px 16px 12px;text-align:center;position:sticky;top:0;z-index:30;
+    background:rgba(15,20,25,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  }
+  header h1{margin:0;font-size:22px;letter-spacing:.3px}
+  header h1 span{color:var(--accent)}
+  header p{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 30px}
+
+  /* Bottom nav */
+  nav{
+    position:fixed;bottom:0;right:0;left:0;z-index:40;display:flex;
+    background:rgba(18,24,31,.97);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  }
+  nav button{
+    flex:1;background:none;border:none;color:var(--muted);padding:8px 2px 10px;
+    font-size:10.5px;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;gap:3px;transition:.15s;
+  }
+  nav button .ic{font-size:19px;line-height:1}
+  nav button.active{color:var(--accent)}
+  nav button:active{transform:scale(.94)}
+
+  .tab{display:none;animation:fade .25s ease}
+  .tab.show{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px 15px;margin:12px 0;box-shadow:var(--shadow)}
+  h2.sec{font-size:16px;margin:18px 2px 8px;color:var(--accent2)}
+
+  label.fld{display:block;font-size:13px;color:var(--muted);margin:14px 2px 7px;font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    border:1.5px solid var(--line);background:var(--card2);color:var(--txt);
+    padding:9px 14px;border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit;
+    transition:.15s;user-select:none;
+  }
+  .chip:active{transform:scale(.95)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#1a1005;font-weight:700}
+  .chip.eq.on{background:var(--blue);border-color:var(--blue);color:#04121f}
+
+  .bigbtn{
+    width:100%;border:none;border-radius:var(--r);padding:17px;margin-top:22px;
+    font-size:18px;font-weight:800;font-family:inherit;cursor:pointer;color:#160a02;
+    background:linear-gradient(120deg,var(--accent),var(--accent2));box-shadow:0 8px 22px rgba(255,107,61,.35);
+    transition:.15s;letter-spacing:.4px;
+  }
+  .bigbtn:active{transform:scale(.98)}
+  .ghost{background:var(--card2);border:1.5px solid var(--line);color:var(--txt);box-shadow:none;font-size:15px;padding:13px;margin-top:10px}
+
+  /* Generated workout */
+  .wkhead{text-align:center;padding:6px 0 2px}
+  .wkhead h2{margin:2px 0;font-size:21px}
+  .wkhead .meta{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .pill{font-size:12px;padding:4px 11px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+  .pill.t{color:var(--accent2);border-color:#4a3a1e}
+
+  .block{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin:13px 0;overflow:hidden;box-shadow:var(--shadow)}
+  .block .bh{padding:13px 15px;background:linear-gradient(120deg,var(--card2),var(--card));border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .block .bh .nm{font-size:16.5px;font-weight:800}
+  .block .bh .nm small{display:block;font-size:11.5px;color:var(--accent2);font-weight:600;margin-top:2px}
+  .block .bh .tm{font-size:13px;color:var(--muted);white-space:nowrap;background:var(--bg2);padding:5px 9px;border-radius:8px;border:1px solid var(--line)}
+  .block .prot{padding:10px 15px;font-size:13px;color:var(--accent2);background:rgba(255,174,66,.06);border-bottom:1px dashed var(--line)}
+  .block ul{list-style:none;margin:0;padding:8px 0}
+  .block li{padding:9px 16px;font-size:15px;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid rgba(44,57,71,.5)}
+  .block li:last-child{border-bottom:none}
+  .block li .dot{color:var(--accent);font-weight:900;font-size:13px;margin-top:3px}
+  .block li .rep{margin-inline-start:auto;color:var(--muted);font-size:13px;white-space:nowrap}
+  .warm{border-color:#2e4a3e}.warm .bh{background:linear-gradient(120deg,#16271f,var(--card))}
+  .cool{border-color:#3a3050}.cool .bh{background:linear-gradient(120deg,#1d1830,var(--card))}
+
+  .row2{display:flex;gap:10px}
+  .row2>button{flex:1}
+
+  /* Library */
+  .lib-item{cursor:pointer}
+  .lib-item .lt{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .lib-item h3{margin:0;font-size:15.5px}
+  .lib-item .dt{font-size:12px;color:var(--muted)}
+  .lib-item .fmt{font-size:11.5px;color:var(--accent2);margin-top:2px}
+  .lib-body{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);white-space:pre-wrap;font-size:13.5px;color:#d3dde7}
+  .lib-item.open .lib-body{display:block}
+  .lib-item .arr{color:var(--muted);transition:.2s}
+  .lib-item.open .arr{transform:rotate(90deg);color:var(--accent)}
+
+  /* Formats explain */
+  .fmt-card h3{margin:0 0 4px;font-size:16px;color:var(--accent)}
+  .fmt-card .tag{font-size:11.5px;color:var(--muted);margin-bottom:6px}
+  .fmt-card p{margin:6px 0 0;font-size:14px;color:#d3dde7}
+  .fmt-card .ex{margin-top:8px;font-size:12.5px;color:var(--accent2);background:rgba(255,174,66,.06);padding:7px 10px;border-radius:9px}
+
+  /* Timer */
+  .timerWrap{text-align:center}
+  .tdisplay{font-size:74px;font-weight:800;font-variant-numeric:tabular-nums;margin:10px 0 4px;letter-spacing:2px}
+  .tphase{font-size:22px;font-weight:800;letter-spacing:1px;height:30px}
+  .tphase.work{color:var(--accent)}.tphase.rest{color:var(--good)}.tphase.idle{color:var(--muted)}
+  .tmeta{color:var(--muted);font-size:14px;margin-top:4px}
+  .tring{width:230px;height:230px;margin:6px auto 4px;position:relative}
+  .tring svg{transform:rotate(-90deg)}
+  .tinputs{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin:14px 0 4px}
+  .tinputs .ti{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;text-align:center}
+  .tinputs .ti label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  .tinputs .ti input{width:62px;background:var(--bg);border:1px solid var(--line);color:var(--txt);font-size:18px;text-align:center;border-radius:8px;padding:5px;font-family:inherit}
+  .tbtns{display:flex;gap:10px;margin-top:14px}
+  .tbtns button{flex:1;padding:15px;border-radius:14px;border:none;font-family:inherit;font-size:17px;font-weight:800;cursor:pointer}
+  .tstart{background:var(--good);color:#04221a}.tpause{background:var(--accent2);color:#221700}.treset{background:var(--card2);color:var(--txt);border:1.5px solid var(--line)!important}
+
+  /* Inputs / builder */
+  .tin{width:100%;background:var(--bg);border:1.5px solid var(--line);color:var(--txt);border-radius:12px;padding:12px;font-size:15px;font-family:inherit}
+  .tin:focus{outline:none;border-color:var(--accent)}
+  .cbexlist{list-style:none;padding:6px 0 0;margin:0}
+  .cbexlist li{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid rgba(44,57,71,.5);font-size:14.5px}
+  .cbexlist li:last-child{border-bottom:none}
+  .x{color:var(--accent);cursor:pointer;font-weight:800;padding:0 4px;user-select:none}
+
+  /* Picker overlay */
+  .pickerOv{position:fixed;inset:0;z-index:60;background:rgba(8,11,15,.72);backdrop-filter:blur(3px);display:none;align-items:flex-end}
+  .pickerOv.show{display:flex;animation:fade .2s}
+  .pickerBox{background:var(--bg2);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:760px;margin:0 auto;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 -8px 30px rgba(0,0,0,.5)}
+  .pickerHead{display:flex;gap:9px;padding:14px;border-bottom:1px solid var(--line);align-items:center}
+  .pickerHead .tin{flex:1}
+  .pickerHead .chip{white-space:nowrap;background:var(--good);color:#04221a;border-color:var(--good);font-weight:700}
+  .pickList{overflow-y:auto;padding:8px 12px 18px}
+  .pickGrp{font-size:12px;color:var(--accent2);font-weight:700;margin:12px 4px 6px;border-bottom:1px dashed var(--line);padding-bottom:4px}
+  .pickItem{padding:11px 12px;border-radius:10px;font-size:15px;cursor:pointer;border:1px solid transparent}
+  .pickItem:active{transform:scale(.99)}
+  .pickItem.on{background:rgba(54,201,142,.14);border-color:var(--good);color:#aef0d4;font-weight:600}
+
+  /* Toast */
+  #toast{position:fixed;bottom:84px;right:50%;transform:translateX(50%) translateY(20px);z-index:80;background:var(--good);color:#04221a;font-weight:800;padding:12px 20px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transition:.25s;pointer-events:none;font-size:15px}
+  #toast.show{opacity:1;transform:translateX(50%) translateY(0)}
+
+  .hint{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+  .empty{text-align:center;color:var(--muted);padding:30px 10px}
+  .empty .big{font-size:46px;margin-bottom:8px}
+  @media print{nav,header,.bigbtn,.row2,.ghost{display:none!important}body{background:#fff;color:#000;padding:0}.block,.card{box-shadow:none;border-color:#ccc;break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="themeBtn" id="themeBtn" onclick="toggleTheme()" title="החלפת ערכת צבעים">☀️</button>
+  <h1>מחולל <span>האימונים</span> שלי</h1>
+  <p>50 דקות · חימום · אימון · מתיחות — בלחיצת כפתור</p>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ TAB: GENERATE ============ -->
+  <section id="tab-gen" class="tab show">
+    <div class="card">
+      <label class="fld">🎯 על מה הדגש?</label>
+      <div class="chips" id="focusChips"></div>
+
+      <label class="fld">⚡ אופי האימון</label>
+      <div class="chips" id="styleChips"></div>
+
+      <label class="fld">🧩 פורמט (סגנון תרגול)</label>
+      <div class="chips" id="fmtChips"></div>
+
+      <label class="fld">🏋️ ציוד זמין <small style="font-weight:400">(מה שלא מסומן — לא ייכלל)</small></label>
+      <div class="chips" id="equipChips"></div>
+
+      <button class="bigbtn" onclick="generate()">✨ צרי לי אימון</button>
+    </div>
+
+    <div id="genOut"></div>
+  </section>
+
+  <!-- ============ TAB: BUILD YOUR OWN ============ -->
+  <section id="tab-build" class="tab">
+    <h2 class="sec">🛠️ בנה אימון משלך</h2>
+    <p style="font-size:13px;color:var(--muted);margin:0 2px 4px">בחרי פורמט לכל בלוק, הוסיפי תרגילים מהמאגר, ושמרי. תצוגה מקדימה מתעדכנת בזמן אמת.</p>
+    <div class="card">
+      <label class="fld">שם האימון</label>
+      <input id="cbName" class="tin" placeholder="לדוגמה: אימון בוקר חזק" oninput="cb.name=this.value">
+      <label class="fld">כלול אוטומטית</label>
+      <div class="chips">
+        <div class="chip on" id="cbWarm" onclick="cbToggle('warm')">🔥 חימום 7 דק׳</div>
+        <div class="chip on" id="cbCool" onclick="cbToggle('cool')">🧘 מתיחות 5 דק׳</div>
+      </div>
+    </div>
+
+    <div id="cbBlocks"></div>
+
+    <div class="card">
+      <label class="fld">➕ הוסף בלוק — בחרי פורמט</label>
+      <div class="chips" id="cbFmtPick"></div>
+    </div>
+
+    <button class="bigbtn" onclick="cbSave()">💾 שמור את האימון שלי</button>
+    <div id="cbPreview"></div>
+  </section>
+
+  <!-- ============ TAB: SAVED ============ -->
+  <section id="tab-saved" class="tab">
+    <h2 class="sec">💾 האימונים השמורים שלי</h2>
+    <p style="font-size:13px;color:var(--muted);margin:0 2px 6px">נשמרים על המכשיר הזה. הקישי "פתח" כדי לראות, להדפיס או להפעיל טיימר.</p>
+    <div id="savedList"></div>
+    <div id="savedView"></div>
+  </section>
+
+  <!-- ============ EXERCISE PICKER OVERLAY ============ -->
+  <div id="picker" class="pickerOv">
+    <div class="pickerBox">
+      <div class="pickerHead">
+        <input id="pickSearch" class="tin" placeholder="🔎 חיפוש תרגיל…" oninput="renderPicker()">
+        <button class="chip" onclick="closePicker()">סיום ✓</button>
+      </div>
+      <div id="pickList" class="pickList"></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: LIBRARY ============ -->
+  <section id="tab-lib" class="tab">
+    <h2 class="sec">📚 מאגר האימונים שלי</h2>
+    <p style="font-size:13px;color:var(--muted);margin:0 2px 6px">31 אימונים שצברת לאורך השנים. הקישי על אימון כדי לפתוח.</p>
+    <label class="fld">סינון לפי פורמט</label>
+    <div class="chips" id="libFilter"></div>
+    <div id="libList"></div>
+  </section>
+
+  <!-- ============ TAB: FORMATS ============ -->
+  <section id="tab-fmt" class="tab">
+    <h2 class="sec">🧠 סוגי האימונים — מה זה כל פורמט</h2>
+    <div id="fmtExplain"></div>
+  </section>
+
+  <!-- ============ TAB: TIMER ============ -->
+  <section id="tab-timer" class="tab">
+    <h2 class="sec">⏱️ טיימר אינטרוולים</h2>
+    <div class="card timerWrap">
+      <div class="tring">
+        <svg width="230" height="230" viewBox="0 0 230 230">
+          <circle cx="115" cy="115" r="104" fill="none" stroke="var(--line)" stroke-width="13"/>
+          <circle id="ringFg" cx="115" cy="115" r="104" fill="none" stroke="var(--accent)" stroke-width="13"
+                  stroke-linecap="round" stroke-dasharray="653.4" stroke-dashoffset="0"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div id="tPhase" class="tphase idle">מוכן</div>
+          <div id="tDisplay" class="tdisplay">00</div>
+        </div>
+      </div>
+      <div id="tInfo" class="tmeta">סבב 0 / 0</div>
+
+      <div class="tinputs">
+        <div class="ti"><label>עבודה (שנ׳)</label><input id="inWork" type="number" value="40" min="5" max="600"></div>
+        <div class="ti"><label>מנוחה (שנ׳)</label><input id="inRest" type="number" value="20" min="0" max="600"></div>
+        <div class="ti"><label>סבבים</label><input id="inRounds" type="number" value="6" min="1" max="50"></div>
+        <div class="ti"><label>הכנה (שנ׳)</label><input id="inPrep" type="number" value="10" min="0" max="60"></div>
+      </div>
+
+      <div class="tbtns">
+        <button id="tBtnStart" class="tstart" onclick="timerToggle()">התחל</button>
+        <button class="treset" onclick="timerReset()">איפוס</button>
+      </div>
+      <p class="hint">צליל ורטט בכל מעבר. מתאים לטבטה, EMOM ולכל בלוק עבודה/מנוחה.</p>
+    </div>
+  </section>
+
+</div>
+
+<nav>
+  <button class="active" data-tab="gen"><span class="ic">✨</span>צור</button>
+  <button data-tab="build"><span class="ic">🛠️</span>בנה</button>
+  <button data-tab="saved"><span class="ic">💾</span>שמורים</button>
+  <button data-tab="lib"><span class="ic">📚</span>מאגר</button>
+  <button data-tab="fmt"><span class="ic">🧠</span>פורמטים</button>
+  <button data-tab="timer"><span class="ic">⏱️</span>טיימר</button>
+</nav>
+
+<script>
+/* ============================================================
+   1) מאגר תרגילים (Exercise library)
+   g = קבוצה: legs/upper/core/full/cardio
+   s = אופי: strength / aerobic
+   p = נפיצות (power/explosive) – נחשב גם לאנאירובי-אירובי
+   eq = ציוד אפשרי: none(משקל גוף), dumbbell, kettlebell, band(גומיה/רצועות), ball(כדור), box(מדרגה/בוקס), bosu, bar(מתח/מוט)
+   ============================================================ */
+const LIB = [
+  // ---- רגליים / תחתון ----
+  {n:'סקווט',g:'legs',s:'strength',eq:['none','dumbbell','kettlebell']},
+  {n:'סומו סקווט',g:'legs',s:'strength',eq:['none','dumbbell','kettlebell']},
+  {n:'גובלט סקווט',g:'legs',s:'strength',eq:['dumbbell','kettlebell']},
+  {n:'דד ליפט',g:'legs',s:'strength',eq:['none','dumbbell','kettlebell','bar']},
+  {n:'סינגל לג דד ליפט',g:'legs',s:'strength',eq:['none','dumbbell','kettlebell']},
+  {n:'לאנץ׳ (קדמי/אחורי)',g:'legs',s:'strength',eq:['none','dumbbell','kettlebell']},
+  {n:'לאנץ׳ בולגרי',g:'legs',s:'strength',eq:['none','dumbbell','box']},
+  {n:'לאנץ׳ קרוס',g:'legs',s:'strength',eq:['none','dumbbell']},
+  {n:'קוזאק סקווט',g:'legs',s:'strength',eq:['none','dumbbell']},
+  {n:'סטפ אפ',g:'legs',s:'strength',eq:['box','dumbbell','none']},
+  {n:'הרמות אגן / גשר ישבן',g:'legs',s:'strength',eq:['none','band','box','dumbbell']},
+  {n:'היפ טראסט',g:'legs',s:'strength',eq:['none','dumbbell','box','bar']},
+  {n:'פיסטול סקווט',g:'legs',s:'strength',eq:['none']},
+  {n:'בעיטת חמור (kick back)',g:'legs',s:'strength',eq:['none','band']},
+  {n:'כלב משתין (הרחקת ירך)',g:'legs',s:'strength',eq:['none','band']},
+  {n:'סקווט סטטי (קיר)',g:'legs',s:'strength',eq:['none']},
+
+  // ---- עליון ----
+  {n:'שכיבות סמיכה (פושאפ)',g:'upper',s:'strength',eq:['none','ball']},
+  {n:'חתירה בפלאנק',g:'upper',s:'strength',eq:['dumbbell','kettlebell']},
+  {n:'חתירה בעמידה',g:'upper',s:'strength',eq:['dumbbell','kettlebell','band']},
+  {n:'חתירת שולחן (הפוכה)',g:'upper',s:'strength',eq:['bar']},
+  {n:'לחיצת כתף',g:'upper',s:'strength',eq:['dumbbell','kettlebell','band']},
+  {n:'יד אחורית (טרייספס)',g:'upper',s:'strength',eq:['none','dumbbell','band']},
+  {n:'הרחקת כתף (lateral)',g:'upper',s:'strength',eq:['dumbbell','band']},
+  {n:'פרפר (chest fly)',g:'upper',s:'strength',eq:['dumbbell','band']},
+  {n:'קירוב שכמות (reverse fly)',g:'upper',s:'strength',eq:['dumbbell','band']},
+  {n:'כפיפת מרפקים (curl)',g:'upper',s:'strength',eq:['dumbbell','kettlebell','band']},
+  {n:'מתח (pull up)',g:'upper',s:'strength',eq:['bar']},
+  {n:'פול אובר',g:'upper',s:'strength',eq:['dumbbell','kettlebell']},
+  {n:'דיפ (טרייספס על מדרגה)',g:'upper',s:'strength',eq:['box','none']},
+
+  // ---- מלא / מורכב / נפיץ ----
+  {n:'טרסטר',g:'full',s:'strength',p:1,eq:['dumbbell','kettlebell']},
+  {n:'סנאץ׳',g:'full',s:'strength',p:1,eq:['dumbbell','kettlebell']},
+  {n:'סווינג (קטלבל)',g:'full',s:'aerobic',p:1,eq:['kettlebell','dumbbell']},
+  {n:'קלין',g:'full',s:'strength',p:1,eq:['dumbbell','kettlebell']},
+  {n:'היי פול',g:'full',s:'strength',p:1,eq:['dumbbell','kettlebell','band']},
+  {n:'גראונד טו אובר-הד',g:'full',s:'strength',p:1,eq:['dumbbell','kettlebell']},
+  {n:'הטחות כדור (slams)',g:'full',s:'aerobic',p:1,eq:['ball']},
+  {n:'וול בול',g:'full',s:'aerobic',p:1,eq:['ball']},
+  {n:'ברפי',g:'full',s:'aerobic',p:1,eq:['none']},
+  {n:'חצי ברפי',g:'full',s:'aerobic',eq:['none']},
+  {n:'פאוור מן (man maker)',g:'full',s:'strength',p:1,eq:['dumbbell']},
+  {n:'גורילה',g:'full',s:'strength',p:1,eq:['kettlebell','dumbbell']},
+  {n:'דוויל פרס',g:'full',s:'strength',p:1,eq:['dumbbell','kettlebell']},
+
+  // ---- בטן / core ----
+  {n:'סיט אפ',g:'core',s:'strength',eq:['none','ball','dumbbell']},
+  {n:'וי אפ (V-up)',g:'core',s:'strength',eq:['none']},
+  {n:'איקספ (X-up)',g:'core',s:'strength',eq:['none']},
+  {n:'הולו קראנץ׳',g:'core',s:'strength',eq:['none']},
+  {n:'ספיידרמן',g:'core',s:'strength',eq:['none']},
+  {n:'דקירות בטן (toe touch)',g:'core',s:'strength',eq:['none','dumbbell']},
+  {n:'בטן כוכב',g:'core',s:'strength',eq:['none']},
+  {n:'אופניים (bicycle)',g:'core',s:'strength',eq:['none']},
+  {n:'ראשן טוויסט',g:'core',s:'strength',eq:['none','ball','dumbbell']},
+  {n:'סייד בנד / סייד סיט אפ',g:'core',s:'strength',eq:['none','dumbbell']},
+  {n:'גלגל בטן / שטן',g:'core',s:'strength',eq:['none','ball']},
+  {n:'פלאנק',g:'core',s:'strength',eq:['none']},
+  {n:'סייד פלאנק',g:'core',s:'strength',eq:['none']},
+  {n:'מספריים',g:'core',s:'strength',eq:['none']},
+  {n:'אולר (jackknife)',g:'core',s:'strength',eq:['none']},
+  {n:'קומנדו פלאנק',g:'core',s:'strength',eq:['none']},
+  {n:'סופרמן',g:'core',s:'strength',eq:['none']},
+
+  // ---- אירובי / קרדיו ----
+  {n:'סמוקוום (mountain climber)',g:'cardio',s:'aerobic',eq:['none']},
+  {n:'מטפס הרים',g:'cardio',s:'aerobic',eq:['none']},
+  {n:'ג׳אמפינג ג׳קס',g:'cardio',s:'aerobic',eq:['none']},
+  {n:'בוקס גאמפ',g:'cardio',s:'aerobic',p:1,eq:['box']},
+  {n:'גאמפ סקווט',g:'cardio',s:'aerobic',p:1,eq:['none']},
+  {n:'גלגול קפיצה',g:'cardio',s:'aerobic',p:1,eq:['none']},
+  {n:'ריצה על הידיים (inchworm)',g:'cardio',s:'aerobic',eq:['none']},
+  {n:'קפיצת כוכב',g:'cardio',s:'aerobic',p:1,eq:['none']},
+  {n:'קפיצה בחבל',g:'cardio',s:'aerobic',eq:['none']},
+  {n:'דילוגים (skips)',g:'cardio',s:'aerobic',eq:['box','none']},
+  {n:'ריצה במקום / ברך גבוה',g:'cardio',s:'aerobic',eq:['none']},
+];
+
+const WARMUP = ['סקווטים אוויר','לאנג׳ים מתחלפים','ג׳אמפינג ג׳קס','קפיצה לפלאנק וחזרה','שכיבות סמיכה קלות','ברך למרפק נגדי (לאט)','סיבובי כתפיים וזרועות','מטפס הרים איטי','סיבובי אגן ופתיחת ירכיים'];
+const COOLDOWN = ['מתיחת ירך אחורית (hamstring) — 30 שנ׳ כל צד','מתיחת ארבע ראשי (quad) — 30 שנ׳ כל צד','מתיחת מקרבים / פרפר בישיבה — 40 שנ׳','מתיחת ישבן (figure-4) — 30 שנ׳ כל צד','מתיחת חזה וכתפיים — 30 שנ׳','תנוחת הילד (גב תחתון) — 40 שנ׳','סיבוב עמ"ש בשכיבה — 30 שנ׳ כל צד','מתיחת צוואר + 5 נשימות עמוקות'];
+
+/* ============================================================
+   2) הגדרות בחירה (criteria)
+   ============================================================ */
+const FOCUS = [
+  {id:'full',  t:'גוף מלא'},
+  {id:'upper', t:'פלג גוף עליון'},
+  {id:'lower', t:'פלג גוף תחתון'},
+  {id:'core',  t:'בטן וליבה'},
+  {id:'cardio',t:'אירובי'},
+];
+const STYLE = [
+  {id:'balanced',t:'מאוזן'},
+  {id:'aerobic', t:'יותר אירובי 🔥'},
+  {id:'strength',t:'יותר כוח 💪'},
+];
+const FMTS = [
+  {id:'auto',     t:'הפתיעי אותי 🎲'},
+  {id:'tabata',   t:'טבטה'},
+  {id:'emom',     t:'EMOM'},
+  {id:'amrap',    t:'AMRAP'},
+  {id:'stations', t:'תחנות'},
+  {id:'ladder',   t:'צבירה'},
+  {id:'pyramid',  t:'פירמידה'},
+  {id:'superset', t:'סופר-סט'},
+];
+const EQUIP = [
+  {id:'none',     t:'משקל גוף',     fixed:true},
+  {id:'dumbbell', t:'משקולות'},
+  {id:'kettlebell',t:'קטלבל'},
+  {id:'band',     t:'גומיה / רצועות'},
+  {id:'ball',     t:'כדור כוח'},
+  {id:'box',      t:'מדרגה / בוקס'},
+  {id:'bosu',     t:'בוסו'},
+  {id:'bar',      t:'מתח / מוט'},
+];
+
+const sel = {focus:'full', style:'balanced', fmt:'auto', equip:new Set(['none','dumbbell','kettlebell','band','ball','box','bar'])};
+
+/* ============================================================
+   3) מנוע יצירת אימון
+   ============================================================ */
+const rnd = n => Math.floor(Math.random()*n);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function available(e){ return e.eq.some(k => k==='none' || sel.equip.has(k)); }
+
+const FOCUS_GROUPS = {
+  full:   ['legs','upper','core','full','cardio'],
+  upper:  ['upper','full','core','cardio'],
+  lower:  ['legs','full','core','cardio'],
+  core:   ['core','full','cardio'],
+  cardio: ['cardio','full','core'],
+};
+
+let _used = new Set();
+function pickEx(n, opts={}){
+  const groups = opts.groups || FOCUS_GROUPS[sel.focus];
+  let cands = LIB.filter(e => groups.includes(e.g) && available(e));
+  // הטיה לפי אופי
+  const prefer = opts.prefer || (sel.style==='aerobic'?'aerobic':sel.style==='strength'?'strength':null);
+  let prim;
+  if(prefer==='aerobic')      prim = cands.filter(e => e.s==='aerobic' || e.p);
+  else if(prefer==='strength')prim = cands.filter(e => e.s==='strength');
+  else                        prim = cands.slice();
+  let order = shuffle(prim).concat(shuffle(cands.filter(e=>!prim.includes(e))));
+  const res=[];
+  for(const e of order){ if(res.length>=n)break; if(!_used.has(e.n)){res.push(e);_used.add(e.n);} }
+  // אם נגמרו תרגילים טריים – נאפשר חזרה
+  if(res.length<n){ for(const e of order){ if(res.length>=n)break; if(!res.includes(e))res.push(e);} }
+  return res;
+}
+
+const repFor = e => {
+  if(sel.style==='aerobic') return '15–20';
+  if(sel.style==='strength')return e.p?'6–8':'8–12';
+  return e.s==='aerobic'?'15–20':'10–12';
+};
+
+/* --- בוני בלוקים (pure: מקבלים מערך תרגילים, מחזירים "section") --- */
+function secTabata(ex){return{type:'block',fmt:'tabata',nm:'טבטה',sub:'TABATA · עוצמה מקסימלית',
+  prot:'40 שנ׳ עבודה / 20 שנ׳ מנוחה · 3 סבבים בכל תרגיל · עבדי חזק!',
+  min:ex.length*3,items:ex.map(e=>({t:e.n,r:'40/20 ×3'}))};}
+function secEmom(ex){return{type:'block',fmt:'emom',nm:'EMOM',sub:'כל דקה על הדקה',
+  prot:`${ex.length*3} דק׳ · ${ex.length} תרגילים מתחלפים, 3 סבבים · כל דקה תרגיל ~10–12 חזרות, ונוחי עד סוף הדקה`,
+  min:ex.length*3,items:ex.map(e=>({t:e.n,r:repFor(e)+' חז׳'}))};}
+function secAmrap(ex){return{type:'block',fmt:'amrap',nm:'AMRAP',sub:'כמה שיותר הקפות',
+  prot:'2 × 5 דקות (דקה מנוחה ביניהן) · עברי על הרשימה שוב ושוב — כמה שיותר הקפות',
+  min:11,items:ex.map(e=>({t:e.n,r:repFor(e)+' חז׳'}))};}
+function secStations(ex){const st=[];for(let i=0;i<ex.length;i+=2)st.push(ex.slice(i,i+2));
+  return{type:'block',fmt:'stations',nm:'תחנות',sub:'Circuit',
+  prot:`${st.length} תחנות · 4 דקות בכל תחנה · 10–12 חזרות מכל תרגיל, מתחלפות`,
+  min:st.length*4,items:st.map((s,i)=>({t:'תחנה '+(i+1)+': '+s.map(e=>e.n).join(' / '),r:'4 דק׳'}))};}
+function secLadder(ex){let r=sel.style==='aerobic'?30:24;
+  return{type:'block',fmt:'ladder',nm:'צבירה',sub:'Ladder · חזרות יורדות',
+  prot:'בצעי כל שורה ברצף, ירידה בחזרות. לסיום — סיבוב ריצה/דקה אירובי',
+  min:Math.max(8,Math.round(ex.length*2.2)),items:ex.map((e,i)=>({t:e.n,r:Math.max(6,r-i*4)+' חז׳'}))};}
+function secPyramid(ex){return{type:'block',fmt:'pyramid',nm:'פירמידה',sub:'Pyramid · 4-6-8-10',
+  prot:'2 הקפות. ראשונה 4→10 עולה, שנייה 10→4 יורד',
+  min:Math.max(8,Math.round(ex.length*2.4)),items:ex.map(e=>({t:e.n,r:'4·6·8·10'}))};}
+function secSuperset(ex){const p=[];for(let i=0;i<ex.length;i+=2)p.push(ex.slice(i,i+2));
+  return{type:'block',fmt:'superset',nm:'סופר-סט',sub:'זוגות תרגילים',
+  prot:'40 שנ׳ כל תרגיל ברצף · 3 סבבים לכל זוג · 30 שנ׳ מנוחה בין זוגות',
+  min:p.length*4,items:p.map((pr,i)=>({t:'זוג '+(i+1)+': '+pr.map(e=>e.n).join(' + '),r:'40 שנ׳ ×3'}))};}
+
+const SEC = {tabata:secTabata,emom:secEmom,amrap:secAmrap,stations:secStations,ladder:secLadder,pyramid:secPyramid,superset:secSuperset};
+const FMT_COUNT = {tabata:4,emom:4,amrap:5,stations:6,ladder:5,pyramid:5,superset:6};
+
+const STYLE_FMTS = {
+  balanced:['tabata','emom','stations','amrap','pyramid','ladder','superset'],
+  aerobic: ['tabata','amrap','ladder','stations','tabata','amrap'],
+  strength:['emom','stations','superset','pyramid','emom','superset'],
+};
+
+function buildWarm(){const w=shuffle(WARMUP).slice(0,8);
+  return{type:'warm',nm:'חימום',sub:'הכנת הגוף',prot:'~45 שנ׳ לכל תרגיל, קצב עולה. מטרה: לחמם מפרקים והעלאת דופק',min:7,items:w.map(x=>({t:x,r:'45 שנ׳'}))};}
+function buildCool(){return{type:'cool',nm:'שחרור ומתיחות',sub:'Cool-down',prot:'החזקה סטטית, נשימה רגועה, בלי קפיצות',min:5,items:COOLDOWN.map(x=>({t:x,r:''}))};}
+
+function buildWorkout(){
+  _used = new Set();
+  let fmts;
+  if(sel.fmt!=='auto'){ fmts=[sel.fmt,sel.fmt,sel.fmt]; }
+  else {
+    const pool = shuffle(STYLE_FMTS[sel.style]);
+    fmts=[]; for(const f of pool){ if(!fmts.includes(f))fmts.push(f); if(fmts.length>=3)break; }
+    while(fmts.length<3) fmts.push(pool[rnd(pool.length)]);
+  }
+  const blocks = fmts.map(f => SEC[f](pickEx(FMT_COUNT[f])));
+  const sections = [buildWarm(), ...blocks, buildCool()];
+  const total = sections.reduce((s,b)=>s+b.min,0);
+  return {name:'', focus:sel.focus, style:sel.style, total, sections};
+}
+
+/* ============================================================
+   4) רינדור אחיד (גם למחולל, גם לבנייה ידנית, גם לשמורים)
+   ============================================================ */
+function liHTML(it){
+  return `<li><span class="dot">▪</span><span>${it.t}</span>${it.r?`<span class="rep">${it.r}</span>`:''}</li>`;
+}
+function secHTML(s){
+  const cls = s.type==='warm'?'block warm':s.type==='cool'?'block cool':'block';
+  return `<div class="${cls}">
+    <div class="bh"><div class="nm">${s.nm}<small>${s.sub}</small></div><div class="tm">≈ ${s.min} דק׳</div></div>
+    <div class="prot">${s.prot}</div>
+    <ul>${s.items.map(liHTML).join('')}</ul>
+  </div>`;
+}
+function renderWorkout(w, opts={}){
+  const focusT = (FOCUS.find(f=>f.id===w.focus)||{}).t;
+  const styleT = (STYLE.find(s=>s.id===w.style)||{}).t;
+  const mainMin = w.sections.filter(s=>s.type==='block').reduce((a,b)=>a+b.min,0);
+  const title = w.name ? w.name : 'האימון שלך מוכן 💥';
+  return `
+   <div class="wkhead">
+     <h2>${title}</h2>
+     <div class="meta">
+       <span class="pill t">⏱ ≈ ${w.total} דקות</span>
+       ${focusT?`<span class="pill">🎯 ${focusT}</span>`:''}
+       ${styleT?`<span class="pill">⚡ ${styleT}</span>`:''}
+     </div>
+   </div>
+   ${w.sections.filter(s=>s.type==='warm').map(secHTML).join('')}
+   ${mainMin?`<h2 class="sec" style="text-align:center">🔥 גוף האימון — ${mainMin} דק׳</h2>`:''}
+   ${w.sections.filter(s=>s.type==='block').map(secHTML).join('')}
+   ${w.sections.filter(s=>s.type==='cool').map(secHTML).join('')}
+   ${opts.actions||''}`;
+}
+
+let currentWorkout = null;
+function generate(){
+  currentWorkout = buildWorkout();
+  const actions = `
+   <div class="row2">
+     <button class="bigbtn ghost" style="margin-top:0" onclick="generate()">🔄 אימון אחר</button>
+     <button class="bigbtn" style="margin-top:0" onclick="saveCurrent()">💾 שמור אימון</button>
+   </div>
+   <div class="row2">
+     <button class="bigbtn ghost" onclick="window.print()">🖨️ הדפסה</button>
+     <button class="bigbtn ghost" onclick="goTimer()">⏱️ טיימר</button>
+   </div>`;
+  const out = document.getElementById('genOut');
+  out.innerHTML = renderWorkout(currentWorkout, {actions});
+  out.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ============================================================
+   5) מאגר אימונים קיימים
+   ============================================================ */
+const ARCHIVE = [
+  {t:'פירמידה עם זמן 40 שנ׳',d:'31/5/26',f:'טבטה',b:'פורמט: טבטה 40 שנ׳.\nתרגילים: דד ליפט · חתירה בפלאנק · קוזאק מצד לצד · הטחות · איקספ · סנאץ׳ · סקווט · סמוקוום · סווינג · בטן.'},
+  {t:'סופר סטים',d:'28/5/26',f:'סופר-סט',b:'זוגות תרגילים:\n• סקווט / סומו סקווט\n• איקספ / אופניים\n• דד ליפט / גלגול קפיצה\n• הרחקת כתף / סמוקוום\n• טרסטר / סנאץ׳\n• קוזאק / לאנץ׳\n• פושאפ / סיט אפ\n• סווינג / חתירה בעמידה\n• ספיידרמן / דקירות\n• גומיה טוויסט / חמור\n• הטחות / ראשן טוויסט\n• דיסקית שטן / סופרמן'},
+  {t:'עליון/תחתון/בטן/אירובי',d:'24/4/26',f:'חלוקה לפי שריר',b:'מחולק לפי קבוצות שריר:\n• עליון: לחיצת כתף, פושאפ, חתירה בפלאנק, סנאץ׳, יד אחורית\n• לאנץ׳: ימין, שמאל, דד ליפט, קוזאק (סומו), גומיה פתיחה-סגירה\n• כוכב (בטן): אופניים, וי אפ, סייד סיט אפ ימין/שמאל\n• אירובי: בוקס גאמפ, סווינג, סמוקוום, ריצה ידיים, גלגול קפיצה'},
+  {t:'אימון פאוור',d:'30/1/26',f:'מעורב + טבטה',b:'חלק א׳: פול אובר/דד ליפט · סקווט כבד/טוסיק מדרגה · פרפר/קירוב שכמות · סטפ אפ גומיה/המסטרינג · גלגל בטן/לחיצות חזה · מוט לחיצת כתף/חתירה.\nחלק ב׳: פול אובר/דד ליפט · חתירת שולחן/תלייה · פרפר/פיסטול · הליכת פלאנק בוקס/לאנץ׳ בולגרי · גלגל בטן/כוכב.\nטבטה 40/12 ×6: דד ליפט/סקווט · חתירה רחבה-צרה/יד אחורית · גלגל בטן/בטן כוכב · פרפר מדרגה/קירוב שכמות · לאנץ׳ בולגרי/היפ טראסט · סווינג/סומו.\nטבטה 40/12 ×8: סינגל דד ליפט/סייד בנד · הרמות אגן/סיט אפ · קירוב שכמות/סנאץ׳ · סווינג/סומו · בוקס גאמפ/ג׳יקסון.'},
+  {t:'סבבים 2',d:'9/1/26',f:'צבירה',b:'צבירה יורדת ×2 סבבים:\n34 ריצה ידיים · 32 לאנץ׳ קרוס · 30 סקווט · 28 דדליפט · 26 טרסטר · 24 הטחות · 22 חתירה בפלאנק · 20 טרסטר · 18 איקספ · 16 סמוקוום · 14 סומו סקווט · 12 וי אפ · 10 יד אחורית · 8 פושאפ · כוכב · פלאנק · סיבוב ריצה.'},
+  {t:'חימום 10 דקות',d:'31/12/25',f:'חימום + סטים',b:'חימום: 10 סקווט · 10 לאנג׳ · 10 קפיצה לפלאנק · 10 פושאפ · 10 ברך-מרפק נגדי · 10 סיט אפ · 10 וי אפ.\nחלק 1 (סופר-סט 35 שנ׳ או 6×4):\n• לאנג אחורה / בישיבת לאנג לחיצת כתף\n• סקווט וחצי / כפיפת מרפקים ×4\n• סינגל לג דד ליפט / חתירה יד אחת\n• קרוס / הרחקת כתף\n• חצי ברפי / סיט אפ ×6'},
+  {t:'פאוור מן 1',d:'19/12/25',f:'רשימה 1–13',b:'1.פאוור מן 2.גלגול קפיצה כוכב 3.סקווט 4.פושאפ 5.סמוקוום 6.לאנג׳ 7.בטן כוכב 8.דדליפט 9.גראונד טו אובר-הד 10.איקס אפ 11.ג׳אמפינג ג׳קס 12.ספיידרמן 13.טרסטר.\nגרסה 3: דוויל פרס · חתירה בפלאנק · דיפ סקווט · פושאפ · סמוקוום · לאנג׳ · טרסטר · דדליפט · כוכב · איקס אפ · סנאץ׳ · ספיידרמן · גלגל בטן.'},
+  {t:'50 ריצה ידיים',d:'25/11/25',f:'צבירה',b:'צבירה 40/30/20/10: 40 סקווט · 30 לאנץ׳ · 20 בטן כוכב · 10 פושאפ.\n+ תחנות: ג סקווט/סקווט/יד קדמית · ג׳ג׳/לאנץ׳ לחיצה · מטפס/סומו/ספיידרמן · סמוקוום/הרמות אגן/סיט אפ · ראשן טוויסט/כוכב/דקירות.'},
+  {t:'30 שניות כפול 3',d:'9/9/25',f:'30 שנ׳ ×3',b:'עליות בוקס · לאנץ׳ בולגרי ימ/שמ · ג׳יקסון | ג סקווט · חתירה · פושאפ · סופרמן | סומו · חתירה בעמידה · סינגל דד ליפט | סיט אפ · סייד סיט אפ · ספיידרמן | הטחות · ריצה ידיים · לאנץ׳ לחיצה.'},
+  {t:'קטלבל/משקולות/גומיה/כדור',d:'30/8/25',f:'דקה לכל אזור',b:'חלק 1×2: קטלבל סקווט→דד ליפט סומו · כפיפת מרפקים ולחיצה · מסקווט לפלאנק בקפיצה+סווינג · קריס-קרוס סיט אפ.\nחלק 2×2: לאנג לקרוס · דד ליפט לחתירה · הטחות→פלאנק→קיקבק→סנאץ׳ · מרפק-לברך+איקספ.\nחלק 3×2: סומו→סקווט · פרפר→פול אובר · מטפס הרים · דקירות.\nגומיה: סקווט סטטי פתיחה · הרחקות · סמוקוום+גלגול קפיצה · הולו אופניים.'},
+  {t:'שלוש דק פעמיים',d:'6/8/25',f:'3 דק׳ ×2',b:'כדור הטחות בישיבה · ברך-ברך/בטן כוכב · סמוקוום | חתירת פופאי · בטן תלייה/סופרמן · דילוגים | קלינים · דד ליפט היי פול · בטן מעל משקולת | הרחקת כתף · טרסטר · וי אפ/הולו | בוסו · גלגול קפיצה→פושאפ · איקספ | דיסקית ספיידרמן · קוזאק לחיצה · פושאפ.'},
+  {t:'50 שנ׳, 3 תרגילים ×2',d:'15/6/25',f:'50 שנ׳ ×2',b:'ציוד: משקולות/בקבוקים/מדרגה/אבן/חומה.\nפושאפ · גאמפ סקווט · איקספ | הרמות אגן מדרגה · קפיצה על מדרגה · סיט אפ | לחיצת כתף · סמוקוום · בטן כוכב | לאנץ׳ · ריצה ידיים · וי אפ | חתירה בפלאנק · ג׳אמפינג ג׳קס · אופניים.'},
+  {t:'כל 2 דק 5 סבבים',d:'8/12/24',f:'EMOM (2 דק׳)',b:'10/10 יד קדמית + 15–20 דדליפט | 6/6 לאנץ׳ בולגרי + 5/5 חתירה בפלאנק→פושאפ | 6/6 עליות בוקס + 12–14 היי פול | 12 יד אחורית רצועות + פיסטול | פושאפ כדור + הטחות.'},
+  {t:'אימון ליקי',d:'6/11/24',f:'פירמידה עולה',b:'פירמידה 4·6·8·10 (4 דק׳ עליון+בטן / 4 דק׳ תחתון+בטן):\nחתירה בהטיה+איקספ · ספליט לאנץ׳+איקספ | תלייה+יד אחורית+הולו · פיסטול+הולו | חתירה במכשיר+דקירות · דד ליפט מוט+דקירות | פולי חתירה+ספיידרמן · ריצה בין תחנות | טרסטר+סקווט · פושאפ+הרמות אגן+דד ליפט היי פול.'},
+  {t:'טבטה 30',d:'28/10/24',f:'טבטה',b:'טבטה: סמוקוום/סנאץ׳ · חתירה/פיסטול · טרסטר/לאנץ׳ בולגרי · היפ טראסט/בוקס גאמפ · סווינג/חתירה ישרה.'},
+  {t:'ימין/אירובי/שמאל/בטן',d:'11/9/24',f:'חלוקה לצדדים',b:'סקווט ימ/ג׳אמפינג/סקווט שמ/ג׳אמפינג/הולו | לאנג סטטי לחיצה/ריצה ידיים/אופניים | דד ליפט חתירה/סמוקוום/איקספ | לאנג קרוס/גלגול קפיצה/סיט אפ | חתירה סייד פלאנק/ריצה/וי אפ.\nסשן גומיה 30 שנ׳: סקווט · הרחקות ימ/שמ · פתיחה-סגירה · חמור אחורה · כלב משתין. בטן: סייד סיט אפ/כוכב.'},
+  {t:'EMOM אימון',d:'28/6/24',f:'EMOM',b:'בוסו גומיה סקווט-חמור/קומנדו · רצועות שטן+לאנץ׳ מדרגה · קירוב שכמות→גלגול קפיצה · סייד סיט אפ→גאמפ סקווט · וול בול→ג׳וק מת · לאנץ׳ קטלבל/סווינג · בוקס אפ · קלין לטרסטר.'},
+  {t:'תחנות 5',d:'8/4/24',f:'תחנות',b:'גוף: סקווט קטן · לאנג קד/אח · טיול לפלאנק קומנדו · פושאפ.\nמשקולות: טרסטר · ברך-ברך · פלאנק חתירה · אגן+לחיצת חזה · אגן+יד אחורית.\nבטן: וי אפ · הולו · סיט אפ · איקספ · ראשן טוויסט.\nאירובי: ג׳אמפינג ג׳קס · סמוקוום · גלגול קפיצה · מטפס · גאמפ סקווט.\nקטלבל: סומו→סקווט · סינגל דד ליפט היי פול · דד ליפט · סווינג.'},
+  {t:'4 דק זוגות + סטטי + אירובי',d:'26/12/23',f:'4 דק׳ זוגות',b:'קטלבל לאנץ׳ אלכסון+בטן מתח | רצועות הרמות אגן+סיט אפ | קלינים+דד ליפט | הטחות/מסירות גומיה | קירוב שכמות+סנאץ׳.\nסטטי: סומו · הרמות אגן · מייקל למעלה · פלאנק · דקירות.\nאירובי: גלגול קפיצה · ריצה ידיים · קפיצת כוכב · סמוקוום · ריצה · חבל.'},
+  {t:'לאנץ',d:'20/12/23',f:'רשימה',b:'בוקס גאמפ · דד ליפט · סומו סקווט · חמור גומיה | טרסטר · הרחקת כתף · פלאנק חתירה · ריצה ידיים · פושאפ | איקספ · כוכב · פייק לפלאנק · ספיידרמן · סיט אפ.'},
+  {t:'5 תחנות (10 חזרות)',d:'15/12/23',f:'תחנות',b:'קטלבל: חתירה בסקווט רחב · דד ליפט 2 קטלבל.\nרצועות: הרמת אגן · יד אחורית.\nדמבלים: קירוב שכמות · סקווט.\nבוסו/pull-over: ישיבה לקפיצה.\nגומיה+פושאפ.\n10 דק׳ אירובי סטטי (כל דקה מתחלף): פלאנק · סמוקוום · סקווט סטטי · קיקבק לסקווט · הולו · אופניים · סייד פלאנק ימ · ריצה ידיים · סייד פלאנק שמ · גלגול לקפיצה.'},
+  {t:'דק בטן 10 (רב-חלקי)',d:'16/1/24',f:'מעורב',b:'10 דק בטן: 20 ספיידרמן · 10 סייד בנד · 20 הולו · 10 איקספ.\n10 דק כח: 10 חתירה לפושאפ · 15 לאנץ׳ · 15 סנאץ׳ · 10 דד ליפט.\n10 דק אירובי: 5 גלגול קפיצה · 10 הטחות · 10 סמוקוום · 20 בוקס גאמפ.\n+ EMOM, טבטה ×2, צבירה 2 סבבים, תחנות בחוץ ובפנים.'},
+  {t:'אימון כח',d:'9/1/24',f:'רשימה',b:'היי פול · לחיצת כתף | חתירה בעמידה · יד אחורית/תלייה | וי אפ · איקספ | לאנץ׳ בולגרי · סטפ אפ | דד ליפט · גומיה חמור | פושאפ · פרפר.'},
+  {t:'צבירה 35 דק',d:'26/5/22',f:'צבירה',b:'גרסה 1: 100 לאנץ׳ · 90 בטן כוכב · 80 חתירה · 70 סמוקוום · 60 גובלט סקווט · 50 וי אפ · 40 סנאץ׳ · 30 מטפס · 20 סווינג · 10 סייד סיט אפ · סיבוב ריצה.\nגרסה 2: 120 ריצה ידיים · 100 לאנץ׳ · 90 בטן כוכב · 80 חתירה · 70 מטפס · 60 דד ליפט · 50 אופניים · 40 סמוקוום · 30 סווינג · 20 טרסטר · 10 שטן · סיבוב ריצה.'},
+  {t:'גאמפינג ג׳קס כדור וגומיה',d:'26/5/22',f:'רשימה',b:'ג׳אמפינג ג׳קס כדור+גומיה ראשן טוויסט · ג׳יסקיות סקווט צר-רחב ריצה ידיים אלכסון · בוקס גאמפ+אופניים · סייד פלאנק רצועות ריצה ידיים · חתירה קטלבל · סנאץ׳ לסמוקוום · הטחות חבל/גאמפ סקווט.'},
+  {t:'פירמידה יורדת מ-10',d:'23/5/22',f:'פירמידה',b:'בוסו ספליט לאנץ׳ כדור · הרמות אגן+סמוקוום לסקווט | הרחקת כתף · קיק בק לסנאץ׳ · מספריים | יד אחורית · חתירת שולחן · פיסטול גומיה | סיט אפ קטלבל · סווינג · דד ליפט היי פול | בוקס גאמפ · פושאפ · אופניים | 2 סיבובי ריצה + בטן כוכב.'},
+  {t:'8 חזרות + השלמה',d:'16/5/22',f:'AMRAP + EMOM',b:'דד ליפט/סווינג · חתירת פופאי/קרפדה · קיק בק סנאץ׳/איקספ · סייד לאנץ׳/ספיידרמן · לאנץ׳ בוסו/סייד פלאנק קראנץ׳.\nAMRAP 5: 10 פושאפ · 10 גלגול לכוכב · 10 לאנץ׳ משקל.\nEMOM 8 חזרות +4 דק׳: פושאפ כדור/קוזאק · יד אחורית/לאנץ׳ קפיצה · סייד סיט אפ/קיק בק · חתירה מדרגה/קפיצות צד · שטן/וול בול · וי אפ/בוקס.'},
+  {t:'אף אחורה עם כדור',d:'14/5/22',f:'רשימה',b:'לאנץ׳ אף-אחורה כדור+גלגול קפיצה · קפיצה לסמוקוום מעל מדרגה+סקווט · טרסטר ברכיים · סקווט חמור גומיה בוסו · פושאפ רצועות | גובלט סקווט/מתח/בטן קשת · לאנץ׳/סייד פלאנק/איקספ · טרסטר/קרפדה/אולר · שטן/אגן/ביט אפ · מדרגה חתירה/סמוקוום/דקירות · קוזאק לחיצה/פושאפ כדור/גלגול קפיצה.'},
+  {t:'אימון 1 מי יודע',d:'7/5/22',f:'צבירה + פירמידה',b:'צבירה 13→1: 13 בוקס גאמפ · 12 בטן כוכב · 11 פושאפ · 10 הטחות · 9 איקספ · 8 טרסטר · 7 סמוקוום · 6 שטן · 5 חתירה · 4 דד ליפט · 3 מתח · 2 אולר · 1 סיבוב ריצה.\nפירמידה 12 ויורד: בוקס גאמפ · בטן כוכב · פושאפ · הטחות · איקספ · חתירה · ריצה.\nפירמידה 4 ועולה: סמוקוום · דד ליפט · שטן · טרסטר · אולר · לאנג׳.'},
+  {t:'AMRAP וסיבוב ריצה',d:'2/5/22',f:'AMRAP',b:'דד ליפט kb+סקווט+איקספ · יד אחורית+חתירה צרה+איקספ · בוסו הרמות אגן לחיצה+קומנדו איקספ · מדרגה לאנץ׳ כבד+סומו+איקספ · קיק בק פושאפ כדור גומיה+איקספ.\nאירובי: פוף סקווט · קיק בק לסקווט · קפיצות כוכב · סמוקוום · חבל · ריצה ידיים · מטפס.'},
+  {t:'6 דק תחנה AMRAP',d:'30/4/22',f:'AMRAP',b:'פושאפ צר עד אפיסה · איקספ רצועות · סמוקוום | מדרגה לחיצות חזה · לאנץ׳ בולגרי · דילוגים | וול בול · ראשן טוויסט · הרמות אגן | גומיה חתירה · ניעות רגל אחורית · יד.'},
+];
+
+/* ============================================================
+   6) הסבר על הפורמטים
+   ============================================================ */
+const FMT_EXPLAIN = [
+  {n:'טבטה (Tabata)',tag:'אנאירובי · עוצמה גבוהה',
+   p:'פותח ע"י ד"ר איזומי טבטה. עבודה בעוצמה מקסימלית לזמן קצוב ואז מנוחה קצרה, בחזרתיות. הקלאסי: 20 שנ׳ עבודה / 10 מנוחה ×8 (=4 דק׳). אצלך לרוב 40 שנ׳ עבודה / 12–20 מנוחה ×6–8. מצוין לשריפת קלוריות ושיפור VO2max (אפקט EPOC — הגוף ממשיך לשרוף שעות אחרי).',
+   ex:'דוגמה: דד ליפט 40 שנ׳ → 15 שנ׳ מנוחה, חוזרים 6 פעמים, ואז עוברים לתרגיל הבא.'},
+  {n:'EMOM',tag:'כל דקה על הדקה',
+   p:'Every Minute On the Minute — בתחילת כל דקה מבצעים מספר חזרות קבוע, וכל הזמן שנשאר עד הדקה הבאה הוא המנוחה. ככל שמבצעים מהר יותר — נחים יותר. שומר על עוצמה אחידה ובונה גם כוח וגם סיבולת.',
+   ex:'דוגמה: דקה 1 — 12 סווינג. דקה 2 — 10 פושאפ. דקה 3 — 12 לאנץ׳. וחוזר חלילה.'},
+  {n:'AMRAP',tag:'אירובי · קצב עצמי',
+   p:'As Many Rounds As Possible — כמה שיותר הקפות של רשימת תרגילים בזמן נתון (5/10/20 דק׳). את קובעת את הקצב ומתי לנוח. מעולה לבניית סיבולת ולמדידת התקדמות (כמה הקפות הצלחת).',
+   ex:'דוגמה: 5 דק׳ — 10 פושאפ + 10 גלגול לכוכב + 10 לאנץ׳, שוב ושוב.'},
+  {n:'תחנות (Circuit)',tag:'מעגלי · מאוזן',
+   p:'מסלול של כמה תחנות, בכל תחנה תרגיל אחד או יותר. עוברים מתחנה לתחנה אחרי זמן או חזרות קבועים. מאפשר לשלב כוח, אירובי ובטן באותו אימון, ולעבוד קבוצות שריר שונות לסירוגין.',
+   ex:'דוגמה: 5 תחנות, 4 דק׳ בכל אחת, 10 חזרות מכל תרגיל בכל סבב.'},
+  {n:'צבירה (Ladder)',tag:'נפח גבוה',
+   p:'"סולם" של חזרות — לרוב מספרים יורדים (34, 32, 30... או 40,30,20,10) על פני רשימת תרגילים. הנפח הגדול בהתחלה ואז קל יותר, מה שמאפשר לסיים אימון ארוך ועקבי. אצלך מסתיים הרבה פעמים בסיבוב ריצה.',
+   ex:'דוגמה: 30 סקווט · 24 דד ליפט · 18 חתירה · 12 וי אפ · 6 יד אחורית.'},
+  {n:'פירמידה (Pyramid)',tag:'עולה / יורד',
+   p:'מספר החזרות עולה בהדרגה ואז יורד (או להפך): 4-6-8-10 ובחזרה. בונה הן כוח (החלקים הכבדים) והן סיבולת (הנפח המצטבר).',
+   ex:'דוגמה: 4→6→8→10 חזרות לכל תרגיל, ואז 10→8→6→4 בחזרה.'},
+  {n:'סופר-סט (Superset)',tag:'כוח · יעיל בזמן',
+   p:'שני תרגילים ברצף בלי מנוחה ביניהם, ואז מנוחה קצרה. אם בוחרים שרירים מנוגדים (למשל דחיפה+משיכה) קבוצה אחת נחה בזמן שהשנייה עובדת — חוסך זמן ומעלה את הדופק.',
+   ex:'דוגמה: סקווט 40 שנ׳ → מיד סומו סקווט 40 שנ׳ → מנוחה. ×3.'},
+];
+
+/* ============================================================
+   7) ניווט + ציפוי UI
+   ============================================================ */
+function renderChips(id, arr, key, multi=false){
+  const el = document.getElementById(id);
+  el.innerHTML = arr.map(o=>{
+    const on = multi ? sel.equip.has(o.id) : sel[key]===o.id;
+    const cls = 'chip'+(multi?' eq':'')+(on?' on':'');
+    return `<div class="${cls}" data-id="${o.id}">${o.t}</div>`;
+  }).join('');
+  el.querySelectorAll('.chip').forEach(c=>{
+    c.onclick = ()=>{
+      const id = c.dataset.id;
+      if(multi){
+        if(id==='none')return; // משקל גוף תמיד פעיל
+        sel.equip.has(id)? sel.equip.delete(id): sel.equip.add(id);
+      } else { sel[key]=id; }
+      renderChips(id==='none'?'equipChips':el.id, arr, key, multi);
+    };
+  });
+}
+function renderAll(){
+  renderChips('focusChips',FOCUS,'focus');
+  renderChips('styleChips',STYLE,'style');
+  renderChips('fmtChips',FMTS,'fmt');
+  renderChips('equipChips',EQUIP,'equip',true);
+
+  // ספרייה
+  const fmtSet=[...new Set(ARCHIVE.map(a=>a.f))];
+  const lf=document.getElementById('libFilter');
+  lf.innerHTML = ['הכל',...fmtSet].map((f,i)=>`<div class="chip${i===0?' on':''}" data-f="${f}">${f}</div>`).join('');
+  lf.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    lf.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');renderLib(c.dataset.f);
+  });
+  renderLib('הכל');
+
+  // הסבר פורמטים
+  document.getElementById('fmtExplain').innerHTML = FMT_EXPLAIN.map(f=>`
+    <div class="card fmt-card"><h3>${f.n}</h3><div class="tag">${f.tag}</div><p>${f.p}</p><div class="ex">💡 ${f.ex}</div></div>`).join('');
+
+  // בנייה ידנית — צ'יפים לבחירת פורמט בלוק
+  const fp=document.getElementById('cbFmtPick');
+  fp.innerHTML = FMTS.filter(f=>f.id!=='auto').map(f=>`<div class="chip" data-f="${f.id}">＋ ${f.t}</div>`).join('');
+  fp.querySelectorAll('.chip').forEach(c=>c.onclick=()=>cbAddBlock(c.dataset.f));
+
+  // בורר תרגילים — האזנה אחת (delegation)
+  document.getElementById('pickList').addEventListener('click', e=>{
+    const it=e.target.closest('.pickItem'); if(it) cbAddEx(it.dataset.n);
+  });
+
+  renderBuilder();
+  renderSavedList();
+}
+function renderLib(filter){
+  const list = filter==='הכל'?ARCHIVE:ARCHIVE.filter(a=>a.f===filter);
+  document.getElementById('libList').innerHTML = list.map((a,i)=>`
+    <div class="card lib-item" onclick="this.classList.toggle('open')">
+      <div class="lt"><div><h3>${a.t}</h3><div class="fmt">🏷️ ${a.f}</div></div>
+      <div style="text-align:left"><div class="dt">${a.d}</div><div class="arr">◀</div></div></div>
+      <div class="lib-body">${a.b}</div>
+    </div>`).join('');
+}
+
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('show'));
+    document.getElementById('tab-'+b.dataset.tab).classList.add('show');
+    window.scrollTo({top:0});
+  };
+});
+function goTimer(){ document.querySelector('nav button[data-tab="timer"]').click(); }
+function goTab(t){ document.querySelector('nav button[data-tab="'+t+'"]').click(); }
+
+/* החלפת ערכת צבעים (כהה / בהיר-פסטל) */
+function applyTheme(t){
+  document.body.classList.toggle('light', t==='light');
+  document.getElementById('themeBtn').textContent = t==='light' ? '🌙' : '☀️';
+  try{ localStorage.setItem('theme', t); }catch(e){}
+}
+function toggleTheme(){ applyTheme(document.body.classList.contains('light') ? 'dark' : 'light'); }
+
+/* ============================================================
+   8) שמירת אימונים (localStorage)
+   ============================================================ */
+const LS_KEY = 'myWorkouts_v1';
+function loadSaved(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||[]; }catch(e){ return []; } }
+function storeSaved(arr){ try{ localStorage.setItem(LS_KEY, JSON.stringify(arr)); return true; }catch(e){ alert('הדפדפן לא מאפשר שמירה כאן. נסי לפתוח את הקובץ בדפדפן רגיל (Chrome/Edge).'); return false; } }
+function todayStr(){ const d=new Date(); return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
+function defaultName(w){ const f=(FOCUS.find(x=>x.id===w.focus)||{}).t||'אימון'; const s=(STYLE.find(x=>x.id===w.style)||{}).t||''; return f+(s?' · '+s:''); }
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.className='show'; clearTimeout(t._h); t._h=setTimeout(()=>t.className='',1900);
+}
+function saveCurrent(){
+  if(!currentWorkout) return;
+  const def = currentWorkout.name || defaultName(currentWorkout);
+  const name = prompt('שם לאימון:', def);
+  if(name===null) return;
+  const w = JSON.parse(JSON.stringify(currentWorkout));
+  w.name = name.trim() || def;
+  w.savedAt = todayStr();
+  const arr = loadSaved(); arr.unshift(w);
+  if(storeSaved(arr)){ toast('האימון נשמר! ✅'); renderSavedList(); }
+}
+function renderSavedList(){
+  const arr = loadSaved();
+  const el = document.getElementById('savedList');
+  if(!arr.length){ el.innerHTML = `<div class="empty"><div class="big">💾</div>עדיין לא שמרת אימונים.<br>צרי אימון או בני אימון, ולחצי "שמור".</div>`; return; }
+  el.innerHTML = arr.map((w,i)=>`
+    <div class="card">
+      <div class="lt" onclick="openSaved(${i})" style="cursor:pointer">
+        <div><h3>${w.name}</h3><div class="fmt">⏱ ${w.total} דק׳ · ${w.sections.filter(s=>s.type==='block').length} בלוקים</div></div>
+        <div style="text-align:left"><div class="dt">${w.savedAt||''}</div></div>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <button class="bigbtn ghost" style="margin:0" onclick="openSaved(${i})">👁️ פתח</button>
+        <button class="bigbtn ghost" style="margin:0" onclick="delSaved(${i})">🗑️ מחק</button>
+      </div>
+    </div>`).join('');
+}
+function openSaved(i){
+  const w = loadSaved()[i]; if(!w) return;
+  const actions = `<div class="row2"><button class="bigbtn ghost" onclick="window.print()">🖨️ הדפסה</button><button class="bigbtn ghost" onclick="goTimer()">⏱️ טיימר</button></div>`;
+  const v = document.getElementById('savedView');
+  v.innerHTML = renderWorkout(w, {actions});
+  v.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function delSaved(i){
+  if(!confirm('למחוק את האימון?')) return;
+  const arr = loadSaved(); arr.splice(i,1); storeSaved(arr);
+  renderSavedList(); document.getElementById('savedView').innerHTML='';
+}
+
+/* ============================================================
+   9) בניית אימון משלך
+   ============================================================ */
+const cb = { name:'', warm:true, cool:true, blocks:[] };
+const GLAB = {legs:'רגליים',upper:'פלג גוף עליון',full:'מורכב / נפיץ',core:'בטן וליבה',cardio:'אירובי'};
+let pickTarget = -1;
+
+function cbToWorkout(){
+  const sections = [];
+  if(cb.warm) sections.push(buildWarm());
+  cb.blocks.forEach(b=>{
+    const ex = b.ex.map(n=>LIB.find(e=>e.n===n)).filter(Boolean);
+    if(ex.length) sections.push(SEC[b.fmt](ex));
+  });
+  if(cb.cool) sections.push(buildCool());
+  const total = sections.reduce((a,s)=>a+s.min,0);
+  return {name:(cb.name||'').trim()||'האימון שלי', focus:'', style:'', total, sections};
+}
+function renderBuilder(){
+  document.getElementById('cbWarm').className = 'chip'+(cb.warm?' on':'');
+  document.getElementById('cbCool').className = 'chip'+(cb.cool?' on':'');
+  const bl = document.getElementById('cbBlocks');
+  bl.innerHTML = cb.blocks.length ? cb.blocks.map((b,i)=>{
+    const label = (FMTS.find(f=>f.id===b.fmt)||{}).t || b.fmt;
+    const exList = b.ex.length
+      ? b.ex.map((n,j)=>`<li><span>${n}</span><span class="x" onclick="cbRemoveEx(${i},${j})">✕</span></li>`).join('')
+      : '<li style="color:var(--muted)">אין תרגילים עדיין — הוסיפי למטה</li>';
+    return `<div class="card">
+      <div class="lt"><h3>בלוק ${i+1}: ${label}</h3><div class="x" style="font-size:18px" onclick="cbRemoveBlock(${i})">🗑️</div></div>
+      <ul class="cbexlist">${exList}</ul>
+      <button class="bigbtn ghost" style="margin-top:8px" onclick="cbOpenPicker(${i})">＋ הוסף תרגיל</button>
+    </div>`;
+  }).join('') : `<div class="empty" style="padding:20px"><div class="big">🧱</div>הוסיפי בלוק כדי להתחיל</div>`;
+  const w = cbToWorkout();
+  const hasBlocks = w.sections.some(s=>s.type==='block');
+  document.getElementById('cbPreview').innerHTML = hasBlocks
+    ? `<h2 class="sec" style="text-align:center">👁️ תצוגה מקדימה · ≈ ${w.total} דק׳</h2>` + renderWorkout(w,{})
+    : '';
+}
+function cbToggle(k){ cb[k]=!cb[k]; renderBuilder(); }
+function cbAddBlock(fmt){ cb.blocks.push({fmt, ex:[]}); renderBuilder(); document.getElementById('cbBlocks').lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'}); }
+function cbRemoveBlock(i){ cb.blocks.splice(i,1); renderBuilder(); }
+function cbRemoveEx(i,j){ cb.blocks[i].ex.splice(j,1); renderBuilder(); }
+function cbOpenPicker(i){
+  pickTarget=i; document.getElementById('pickSearch').value='';
+  renderPicker(); document.getElementById('picker').classList.add('show');
+}
+function closePicker(){ document.getElementById('picker').classList.remove('show'); pickTarget=-1; }
+function renderPicker(){
+  const q=(document.getElementById('pickSearch').value||'').trim();
+  const groups=['legs','upper','full','core','cardio'];
+  const chosen=new Set(pickTarget>=0 ? cb.blocks[pickTarget].ex : []);
+  let html='';
+  groups.forEach(g=>{
+    const items=LIB.filter(e=>e.g===g && (!q || e.n.includes(q)));
+    if(!items.length) return;
+    html += `<div class="pickGrp">${GLAB[g]}</div>` + items.map(e=>
+      `<div class="pickItem${chosen.has(e.n)?' on':''}" data-n="${e.n}">${chosen.has(e.n)?'✓ ':''}${e.n}</div>`).join('');
+  });
+  document.getElementById('pickList').innerHTML = html || '<div class="empty">לא נמצא תרגיל</div>';
+}
+function cbAddEx(name){
+  if(pickTarget<0) return;
+  const ex=cb.blocks[pickTarget].ex; const k=ex.indexOf(name);
+  if(k>=0) ex.splice(k,1); else ex.push(name);
+  renderPicker(); renderBuilder();
+}
+function cbSave(){
+  const w = cbToWorkout();
+  if(!w.sections.some(s=>s.type==='block')){ alert('הוסיפי לפחות בלוק אחד עם תרגילים 🙂'); return; }
+  w.savedAt = todayStr();
+  const arr = loadSaved(); arr.unshift(w);
+  if(storeSaved(arr)){ toast('האימון שלך נשמר! ✅'); renderSavedList(); goTab('saved'); }
+}
+
+/* ============================================================
+   10) טיימר אינטרוולים
+   ============================================================ */
+let T={running:false,phase:'idle',sec:0,round:0,rounds:0,work:40,rest:20,prep:10,iv:null,total:0};
+const R=104, CIRC=2*Math.PI*R;
+function beep(freq=880,dur=0.15){
+  try{const a=new (window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator();const g=a.createGain();
+  o.frequency.value=freq;o.connect(g);g.connect(a.destination);g.gain.value=0.25;o.start();
+  setTimeout(()=>{o.stop();a.close();},dur*1000);}catch(e){}
+}
+function vibrate(ms){ if(navigator.vibrate)navigator.vibrate(ms); }
+function tShow(){
+  document.getElementById('tDisplay').textContent=String(T.sec).padStart(2,'0');
+  const ph=document.getElementById('tPhase');
+  const map={idle:['מוכן','idle'],prep:['היכון','idle'],work:['עבודה','work'],rest:['מנוחה','rest'],done:['סיום! 🎉','rest']};
+  ph.textContent=map[T.phase][0]; ph.className='tphase '+map[T.phase][1];
+  document.getElementById('tInfo').textContent = T.phase==='done'?`הושלמו ${T.rounds} סבבים`:`סבב ${T.round} / ${T.rounds}`;
+  const fg=document.getElementById('ringFg');
+  fg.style.stroke = T.phase==='rest'?'var(--good)':T.phase==='work'?'var(--accent)':'var(--muted)';
+  fg.setAttribute('stroke-dashoffset', CIRC*(1-(T.total? T.sec/T.total:0)));
+}
+function tStep(){
+  T.sec--;
+  if(T.sec<=3 && T.sec>0 && T.phase!=='idle') beep(700,0.08);
+  if(T.sec<0){
+    if(T.phase==='prep'){ T.phase='work';T.sec=T.work;T.total=T.work;T.round=1;beep(900,0.2);vibrate(200);}
+    else if(T.phase==='work'){
+      if(T.round>=T.rounds){ T.phase='done';T.running=false;clearInterval(T.iv);beep(1100,0.4);vibrate([200,100,200]);document.getElementById('tBtnStart').textContent='התחל';tShow();return;}
+      if(T.rest>0){T.phase='rest';T.sec=T.rest;T.total=T.rest;beep(500,0.2);vibrate(150);}
+      else {T.round++;T.sec=T.work;T.total=T.work;beep(900,0.2);vibrate(200);}
+    }
+    else if(T.phase==='rest'){ T.round++;T.phase='work';T.sec=T.work;T.total=T.work;beep(900,0.2);vibrate(200);}
+  }
+  tShow();
+}
+function timerToggle(){
+  const btn=document.getElementById('tBtnStart');
+  if(T.running){ T.running=false;clearInterval(T.iv);btn.textContent='המשך';return; }
+  if(T.phase==='idle'||T.phase==='done'){
+    T.work=+document.getElementById('inWork').value||40;
+    T.rest=+document.getElementById('inRest').value||0;
+    T.rounds=+document.getElementById('inRounds').value||6;
+    T.prep=+document.getElementById('inPrep').value||0;
+    if(T.prep>0){T.phase='prep';T.sec=T.prep;T.total=T.prep;}
+    else{T.phase='work';T.sec=T.work;T.total=T.work;T.round=1;}
+  }
+  T.running=true;btn.textContent='השהה';beep(800,0.12);tShow();
+  T.iv=setInterval(tStep,1000);
+}
+function timerReset(){
+  T.running=false;clearInterval(T.iv);T.phase='idle';T.sec=0;T.round=0;T.total=0;
+  document.getElementById('tBtnStart').textContent='התחל';tShow();
+}
+
+try{ applyTheme(localStorage.getItem('theme')||'dark'); }catch(e){ applyTheme('dark'); }
+renderAll();
+tShow();
+</script>
+</body>
+</html>
